@@ -193,16 +193,18 @@ public class MobilisAgent implements NodeInformationProvider, ConnectionListener
 		}
 		mConnection.connect();
 
+		String username = null;
 		String password = null;
 		String resource = null;
 
 		synchronized (mDefaultSettings) {
-			mJid = mDefaultSettings.get("username") + "@" + mDefaultSettings.get("service");
+			username = (String)mDefaultSettings.get("username");
 			password = (String)mDefaultSettings.get("password");
 			resource = (String)mDefaultSettings.get("resource");
+			mJid = username + "@" + mDefaultSettings.get("service");
 		}
 
-		mConnection.login(mJid, password, resource);
+		mConnection.login(username, password, resource);
 		mConnection.addConnectionListener(this);
 
 		ServiceDiscoveryManager sdm = ServiceDiscoveryManager.getInstanceFor(mConnection);
