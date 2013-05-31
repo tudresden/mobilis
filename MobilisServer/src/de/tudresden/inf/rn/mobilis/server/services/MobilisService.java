@@ -36,8 +36,6 @@ import org.jivesoftware.smackx.packet.DiscoverItems.Item;
 import de.tudresden.inf.rn.mobilis.server.MobilisManager;
 import de.tudresden.inf.rn.mobilis.server.agents.MobilisAgent;
 import de.tudresden.inf.rn.mobilis.xmpp.beans.Mobilis;
-import de.tudresden.inf.rn.mobilis.xmpp.beans.coordination.StopServiceInstanceBean;
-import de.tudresden.inf.rn.mobilis.xmpp.server.BeanIQAdapter;
 
 public abstract class MobilisService implements PacketListener, NodeInformationProvider {	  
 
@@ -48,7 +46,7 @@ public abstract class MobilisService implements PacketListener, NodeInformationP
     private Map<String, Object> mDefaultSettings;
     
     private String _serviceName = null;
-	private boolean selfSuicideMode = false;
+	private boolean suicideMode = false;
     
     public MobilisService() {
 		mUserSettings = Collections.synchronizedMap(new HashMap<String, Map<String, Object>>());
@@ -95,21 +93,17 @@ public abstract class MobilisService implements PacketListener, NodeInformationP
 		// packet listener
 		mAgent.getConnection().removePacketListener(this);
 		
+		// TODO: setting a boolean is a quickfix for service shutdown behavior (see MO-8) 
+		if (!suicideMode) {
+			suicideMode = true;
+			String fullJid = getAgent().getFullJid();
+			MobilisManager.getInstance().getServiceContainerByRunningInstanceJid(fullJid).shutdownServiceInstance(fullJid);
+		}
+		
+		MobilisManager.getInstance().notifyOfServiceShutdown(this);
+
 		// logging
 		MobilisManager.getLogger().info("Mobilis Service (" + getNamespace() + ") shut down.");
-		
-		// TODO: setting a boolean is a quickfix for service shutdown behavior (see MO-8) 
-		if (!selfSuicideMode) {
-			selfSuicideMode = true;
-			String fullJid = getAgent().getFullJid();
-			String jid = fullJid.split("/")[0];
-			StopServiceInstanceBean bean = new StopServiceInstanceBean(fullJid);
-			
-			bean.setTo(jid + "/Coordinator");
-			getAgent().getConnection().sendPacket(new BeanIQAdapter(bean));
-			
-			mAgent.getConnection().disconnect();			
-		}
     }
     
     // getter + setter methods

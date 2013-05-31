@@ -22,14 +22,12 @@
 
 package de.tudresden.inf.rn.mobilis.mxa.activities;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
-import android.view.View;
+import de.tudresden.inf.rn.mobilis.mxa.MXAController;
 import de.tudresden.inf.rn.mobilis.mxa.R;
 
 /**
@@ -43,15 +41,13 @@ public class PreferencesClient extends PreferenceActivity {
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        this.getPreferenceManager().setSharedPreferencesName(MXAController.get().getSharedPreferencesName());
 
         // Load the preferences page layout from an XML resource
-        addPreferencesFromResource(R.xml.preferences);
+        addPreferencesFromResource(R.xml.mxa_preferences);
         
-        mSharedPreferences = getSharedPreferences(
-				"de.tudresden.inf.rn.mobilis.mxa_preferences",
-				Context.MODE_PRIVATE);
-        
-        
+        mSharedPreferences = MXAController.get().getSharedPreferences();
         
         //set the FileChooserActivity for the directory
         Preference customPref = (Preference) findPreference("pref_xmpp_debug_directory");

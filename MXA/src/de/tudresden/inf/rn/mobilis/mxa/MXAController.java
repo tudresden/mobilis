@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009 Technische Universität Dresden
+ * Copyright (C) 2009 Technische Universitï¿½t Dresden
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.util.Log;
 
 /**
@@ -39,7 +39,8 @@ public class MXAController implements ServiceConnection {
 	private static MXAController instance;
 	private IXMPPService mXMPPService = null;
 	private MXAListener mListener;
-	private Context mContext;
+	private SharedPreferences mSharedPreferences;
+	private String sharedPreferencesName;
 
 	private MXAController() {
 	};
@@ -50,13 +51,16 @@ public class MXAController implements ServiceConnection {
 		}
 		return instance;
 	}
-
+	
 	public void connectMXA(Context ctx, MXAListener listener) {
+		if (mSharedPreferences == null) {
+			return;
+		}
+		
 		mListener = listener;
-		mContext = ctx;
 
 		if (mXMPPService == null) {
-			Intent i = new Intent(IXMPPService.class.getName());
+			Intent i = new Intent(ctx, XMPPRemoteService.class);
 			ctx.startService(i);
 			ctx.bindService(i, instance, 0);
 		} else {
@@ -66,18 +70,10 @@ public class MXAController implements ServiceConnection {
 			}
 		}
 	}
-	
-//	public void disconnectMXA() {
-//		if (mXMPPService != null) {
-//			try {
-//				if (mXMPPService.isConnected()) {
-//					mContext.unbindService(instance);				
-//				}
-//			} catch (RemoteException e) {
-//				e.printStackTrace();
-//			}
-//		}
-//	}
+
+	public void disconnectMXA(Context ctx) {
+		ctx.unbindService(instance);
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -124,4 +120,151 @@ public class MXAController implements ServiceConnection {
 	public IXMPPService getXMPPService() {
 		return mXMPPService;
 	}
+	
+	/**
+	 * Checks whether the mandatory XMPP connection parameters have already been set.
+	 * Doesn't check for correctness of data.
+	 * @return <code>true</code> if XMPP connection parameters are all set,
+	 * 		<code>false</code> otherwise.
+	 */
+	public boolean checkSetupDone() {
+		return mSharedPreferences.contains("pref_host") 
+				&& mSharedPreferences.contains("pref_service") 
+				&& mSharedPreferences.contains("pref_xmpp_user") 
+				&& mSharedPreferences.contains("pref_xmpp_password");
+	}
+
+	public SharedPreferences getSharedPreferences() {
+		return mSharedPreferences;
+	}
+
+	public void setSharedPreferencesName(Context ctx, String sharedPreferencesName) {
+		this.sharedPreferencesName = sharedPreferencesName;
+		this.mSharedPreferences = ctx.getSharedPreferences(sharedPreferencesName, Context.MODE_PRIVATE);
+	}
+	
+	/**
+	 * Sets the XMPP host address (mandatory).
+	 * @param host
+	 */
+	public void setHost(String host) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_host", host).commit();
+		}
+	}
+	
+	/**
+	 * Sets the XMPP host port (optional).
+	 * @param port
+	 */
+	public void setPort(int port) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putInt("pref_port", port).commit();
+		}
+	}
+	
+	/**
+	 * Sets the XMPP service name (in most cases identical to the host name, mandatory).
+	 * @param service
+	 */
+	public void setService(String service) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_service", service).commit();
+		}
+	}
+	
+	/**
+	 * Sets the XMPP user name (mandatory).
+	 * @param username
+	 */
+	public void setUsername(String username) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_xmpp_user", username).commit();
+		}
+	}
+	
+	/**
+	 * Sets the XMPP resource (optional).
+	 * @param resource
+	 */
+	public void setResource(String resource) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_resource", resource).commit();
+		}
+	}
+	
+	/**
+	 * Sets the XMPP password (mandatory).
+	 * @param password
+	 */
+	public void setPassword(String password) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_xmpp_password", password).commit();
+		}
+	}
+	
+	/**
+	 * Sets the timeout after which MXA shall give up retrying to send a packet (optional).
+	 * @param lostTimeout in minutes
+	 */
+	public void setLostTimeout(String lostTimeout) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_xmpp_lost_timeout", lostTimeout).commit();
+		}
+	}
+	
+	/**
+	 * Sets the total count of resend trials for one packet (optional).
+	 * @param retryCount
+	 */
+	public void setRetryCount(String retryCount) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_xmpp_retry_count", retryCount).commit();
+		}
+	}
+	
+	/**
+	 * Sets the timeout interval between two trials to send an IQ (optional).
+	 * @param retryTimeout in seconds
+	 */
+	public void setRetryTimeout(String retryTimeout) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_xmpp_retry_timeout", retryTimeout).commit();
+		}
+	}
+	
+	/**
+	 * Sets the timeout for packet sending (optional).
+	 * @param intervalPacket
+	 */
+	public void setIntervalPacket(String intervalPacket) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putString("pref_xmpp_interval_packet", intervalPacket).commit();
+		}
+	}
+	
+	/**
+	 * Activate/deactivate XMPP encryption (optional).
+	 * @param encryption
+	 */
+	public void setEncryption(boolean encryption) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putBoolean("pref_xmpp_encryption", encryption).commit();
+		}
+	}
+	
+	/**
+	 * Activate/deactivate XMPP compression (optional).
+	 * @param compression
+	 */
+	public void setCompression(boolean compression) {
+		if (mSharedPreferences != null) {
+			mSharedPreferences.edit().putBoolean("pref_xmpp_compression", compression).commit();
+		}
+	}
+
+	public String getSharedPreferencesName() {
+		return sharedPreferencesName;
+	}
+
 }
